@@ -14,7 +14,7 @@ var (
 	connManager = messaging.NewConnectionManager()
 )
 
-func handleRidersWebSocket(w http.ResponseWriter, r *http.Request, rb *messaging.RabbitMQ) {
+func handleRidersWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := connManager.Upgrade(w, r)
 	if err != nil {
 		log.Printf("WebSocket upgrade failed: %v", err)
@@ -33,21 +33,6 @@ func handleRidersWebSocket(w http.ResponseWriter, r *http.Request, rb *messaging
 	connManager.Add(userID, conn)
 	defer connManager.Remove(userID)
 
-	// Initialize queue consumers
-	queues := []string{
-		messaging.NotifyDriverNoDriversFoundQueue,
-		messaging.NotifyDriverAssignQueue,
-		messaging.NotifyPaymentSessionCreatedQueue,
-	}
-
-	for _, q := range queues {
-		consumer := messaging.NewQueueConsumer(rb, connManager, q)
-
-		if err := consumer.Start(); err != nil {
-			log.Printf("Failed to start consumer for queue: %s: err: %v", q, err)
-		}
-	}
-
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -59,7 +44,7 @@ func handleRidersWebSocket(w http.ResponseWriter, r *http.Request, rb *messaging
 	}
 }
 
-func handleDriversWebSocket(w http.ResponseWriter, r *http.Request, rb *messaging.RabbitMQ) {
+func handleDriversWebSocket(w http.ResponseWriter, r *http.Request, kafka *messaging.Kafka) {
 	conn, err := connManager.Upgrade(w, r)
 	if err != nil {
 		log.Printf("WebSocket upgrade failed: %v", err)
@@ -121,19 +106,6 @@ func handleDriversWebSocket(w http.ResponseWriter, r *http.Request, rb *messagin
 		return
 	}
 
-	// Initialize queue consumers
-	queues := []string{
-		messaging.DriverCmdTripRequestQueue,
-	}
-
-	for _, q := range queues {
-		consumer := messaging.NewQueueConsumer(rb, connManager, q)
-
-		if err := consumer.Start(); err != nil {
-			log.Printf("Failed to start consumer for queue: %s: err: %v", q, err)
-		}
-	}
-
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -158,12 +130,12 @@ func handleDriversWebSocket(w http.ResponseWriter, r *http.Request, rb *messagin
 			// Handle driver location update in the future
 			continue
 		case contracts.DriverCmdTripAccept, contracts.DriverCmdTripDecline:
-			// Forward the message to RabbitMQ
-			if err := rb.PublishMessage(ctx, driverMsg.Type, contracts.Message{
+			// Forward the message to Kafka
+			if err := kafka.PublishMessage(ctx, driverMsg.Type, contracts.Message{
 				OwnerID: userID,
 				Data:    driverMsg.Data,
 			}); err != nil {
-				log.Printf("Error publishing message to RabbitMQ: %v", err)
+				log.Printf("Error publishing message to Kafka: %v", err)
 			}
 		default:
 			log.Printf("Unknown message type: %s", driverMsg.Type)

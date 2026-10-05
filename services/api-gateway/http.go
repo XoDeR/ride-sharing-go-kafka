@@ -94,7 +94,7 @@ func handleTripPreview(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, response)
 }
 
-func handleStripeWebhook(w http.ResponseWriter, r *http.Request, rb *messaging.RabbitMQ) {
+func handleStripeWebhook(w http.ResponseWriter, r *http.Request, kafka *messaging.Kafka) {
 	ctx, span := tracer.Start(r.Context(), "handleStripeWebhook")
 	defer span.End()
 
@@ -156,7 +156,7 @@ func handleStripeWebhook(w http.ResponseWriter, r *http.Request, rb *messaging.R
 			Data:    payloadBytes,
 		}
 
-		if err := rb.PublishMessage(
+		if err := kafka.PublishMessage(
 			ctx,
 			contracts.PaymentEventSuccess,
 			message,
