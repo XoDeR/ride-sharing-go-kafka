@@ -1,6 +1,6 @@
 # NOT PRODUCTION-GRADE: single broker, replication factor 1, PLAINTEXT listener
-# with no authentication or encryption (same posture as the RabbitMQ setup this
-# replaces). Before real production use:
+# with no authentication or encryption, like the rest of this prod setup.
+# Before real production use:
 #   - add SASL authentication and TLS (and restrict access with NetworkPolicies)
 #   - run at least 3 brokers with replication.factor=3 and min.insync.replicas=2
 #   - set explicit topic retention and size the PVCs for it
