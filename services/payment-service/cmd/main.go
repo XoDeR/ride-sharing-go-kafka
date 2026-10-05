@@ -45,7 +45,7 @@ func main() {
 		cancel()
 	}()
 
-	appURL := env.GetString("APP_URL", "http://localhost:3000")
+	appURL := env.GetString("APP_URL", "http://localhost:3100")
 
 	// Stripe config
 	stripeCfg := &types.PaymentConfig{

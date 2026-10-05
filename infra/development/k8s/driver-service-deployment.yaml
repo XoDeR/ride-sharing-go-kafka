@@ -26,11 +26,11 @@ spec:
               memory: "128Mi"
               cpu: "200m"
           env:
-            - name: RABBITMQ_URI
+            - name: KAFKA_BROKERS
               valueFrom:
-                secretKeyRef:
-                  name: rabbitmq-credentials
-                  key: uri
+                configMapKeyRef:
+                  name: app-config
+                  key: KAFKA_BROKERS
             - name: JAEGER_ENDPOINT
               valueFrom:
                 configMapKeyRef:

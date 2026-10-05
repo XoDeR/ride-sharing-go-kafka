@@ -30,11 +30,11 @@ spec:
                 secretKeyRef:
                   name: mongodb
                   key: uri
-            - name: RABBITMQ_URI
+            - name: KAFKA_BROKERS
               valueFrom:
-                secretKeyRef:
-                  name: rabbitmq-credentials
-                  key: uri
+                configMapKeyRef:
+                  name: app-config
+                  key: KAFKA_BROKERS
             - name: OSRM_API
               valueFrom:
                 secretKeyRef:

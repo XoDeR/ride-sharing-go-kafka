@@ -1,25 +1,39 @@
 # Load the restart_process extension
 load('ext://restart_process', 'docker_build_with_restart')
+load('ext://namespace', 'namespace_create', 'namespace_inject')
+
+### Namespace ###
+# Everything runs in its own namespace so this project can run next to other
+# Tilt projects. Start Tilt with a distinct UI port as well: tilt up --port 10351
+NAMESPACE = 'ride-sharing-go-kafka'
+namespace_create(NAMESPACE)
+
+def k8s_yaml_ns(path):
+  k8s_yaml(namespace_inject(read_file(path), NAMESPACE))
+### End Namespace ###
 
 ### K8s Config ###
 
 # Uncomment to use secrets
-k8s_yaml('./infra/development/k8s/secrets.yaml')
+k8s_yaml_ns('./infra/development/k8s/secrets.yaml')
 
-k8s_yaml('./infra/development/k8s/app-config.yaml')
+k8s_yaml_ns('./infra/development/k8s/app-config.yaml')
 
 ### End of K8s Config ###
-### RabbitMQ ###
-k8s_yaml('./infra/development/k8s/rabbitmq-deployment.yaml')
-k8s_resource('rabbitmq', port_forwards=['5672', '15672'], labels='tooling')
-### End RabbitMQ ###
+### Kafka ###
+# No port-forward for the broker: every client runs inside the cluster
+k8s_yaml_ns('./infra/development/k8s/kafka-deployment.yaml')
+k8s_resource('kafka', labels='tooling')
+k8s_yaml_ns('./infra/development/k8s/kafka-ui-deployment.yaml')
+k8s_resource('kafka-ui', port_forwards=['8180:8080'], resource_deps=['kafka'], labels='tooling')
+### End Kafka ###
 ### MongoDB ###
-k8s_yaml('./infra/development/k8s/mongodb-deployment.yaml')
-k8s_resource('mongodb', port_forwards=['27017'], labels='tooling')
+k8s_yaml_ns('./infra/development/k8s/mongodb-deployment.yaml')
+k8s_resource('mongodb', port_forwards=['27117:27017'], labels='tooling')
 ### End MongoDB ###
 ### OSRM ###
-k8s_yaml('./infra/development/k8s/osrm-deployment.yaml')
-k8s_resource('osrm', port_forwards=['5000'], labels='tooling')
+k8s_yaml_ns('./infra/development/k8s/osrm-deployment.yaml')
+k8s_resource('osrm', port_forwards=['5100:5000'], labels='tooling')
 ### End OSRM ###
 ### API Gateway ###
 
@@ -48,9 +62,9 @@ docker_build_with_restart(
   ],
 )
 
-k8s_yaml('./infra/development/k8s/api-gateway-deployment.yaml')
-k8s_resource('api-gateway', port_forwards=8081,
-             resource_deps=['api-gateway-compile', 'rabbitmq'], labels="services")
+k8s_yaml_ns('./infra/development/k8s/api-gateway-deployment.yaml')
+k8s_resource('api-gateway', port_forwards='8181:8081',
+             resource_deps=['api-gateway-compile', 'kafka'], labels="services")
 ### End of API Gateway ###
 ### Trip Service ###
 
@@ -79,8 +93,8 @@ docker_build_with_restart(
   ],
 )
 
-k8s_yaml('./infra/development/k8s/trip-service-deployment.yaml')
-k8s_resource('trip-service', resource_deps=['trip-service-compile', 'rabbitmq', 'osrm', 'mongodb'], labels="services")
+k8s_yaml_ns('./infra/development/k8s/trip-service-deployment.yaml')
+k8s_resource('trip-service', resource_deps=['trip-service-compile', 'kafka', 'osrm', 'mongodb'], labels="services")
 
 ### End of Trip Service ###
 ### Driver Service ###
@@ -109,8 +123,8 @@ docker_build_with_restart(
   ],
 )
 
-k8s_yaml('./infra/development/k8s/driver-service-deployment.yaml')
-k8s_resource('driver-service', resource_deps=['driver-service-compile', 'rabbitmq'], labels="services")
+k8s_yaml_ns('./infra/development/k8s/driver-service-deployment.yaml')
+k8s_resource('driver-service', resource_deps=['driver-service-compile', 'kafka'], labels="services")
 
 ### End of Driver Service ###
 ### Web Frontend ###
@@ -121,8 +135,8 @@ docker_build(
   dockerfile='./infra/development/docker/web.Dockerfile',
 )
 
-k8s_yaml('./infra/development/k8s/web-deployment.yaml')
-k8s_resource('web', port_forwards=3000, labels="frontend")
+k8s_yaml_ns('./infra/development/k8s/web-deployment.yaml')
+k8s_resource('web', port_forwards='3100:3000', labels="frontend")
 
 ### End of Web Frontend ###
 
@@ -152,13 +166,13 @@ docker_build_with_restart(
   ],
 )
 
-k8s_yaml('./infra/development/k8s/payment-service-deployment.yaml')
-k8s_resource('payment-service', resource_deps=['payment-service-compile', 'rabbitmq'], labels="services")
+k8s_yaml_ns('./infra/development/k8s/payment-service-deployment.yaml')
+k8s_resource('payment-service', resource_deps=['payment-service-compile', 'kafka'], labels="services")
 
 ### End of Payment Service ###
 
 
 ### Jaeger ###
-k8s_yaml('./infra/development/k8s/jaeger.yaml')
-k8s_resource('jaeger', port_forwards=['16686:16686', '14268:14268'], labels="tooling")
+k8s_yaml_ns('./infra/development/k8s/jaeger.yaml')
+k8s_resource('jaeger', port_forwards=['16786:16686', '14368:14268'], labels="tooling")
 ### End of Jaeger ###

@@ -22,12 +22,11 @@ spec:
                 configMapKeyRef:
                   name: app-config
                   key: JAEGER_ENDPOINT
-            # RabbitMQ credentials
-            - name: RABBITMQ_URI
+            - name: KAFKA_BROKERS
               valueFrom:
-                secretKeyRef:
-                  name: rabbitmq-credentials
-                  key: uri
+                configMapKeyRef:
+                  name: app-config
+                  key: KAFKA_BROKERS
           ports:
             - containerPort: 9092
           resources:
