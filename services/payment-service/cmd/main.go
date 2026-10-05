@@ -35,8 +35,6 @@ func main() {
 	defer cancel()
 	defer sh(ctx)
 
-	rabbitMqURI := env.GetString("RABBITMQ_URI", "amqp://guest:guest@rabbitmq:5672/")
-
 	// Setup graceful shutdown
 	go func() {
 		sigCh := make(chan os.Signal, 1)
@@ -67,17 +65,17 @@ func main() {
 
 	log.Println(svc)
 
-	// RabbitMQ connection
-	rabbitmq, err := messaging.NewRabbitMQ(rabbitMqURI)
+	// Kafka connection
+	kafka, err := messaging.NewKafka(messaging.BrokersFromEnv())
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rabbitmq.Close()
+	defer kafka.Close()
 
-	log.Println("Starting RabbitMQ connection")
+	log.Println("Starting Kafka connection")
 
 	// Trip Consumer
-	tripConsumer := events.NewTripConsumer(rabbitmq, svc)
+	tripConsumer := events.NewTripConsumer(kafka, svc)
 	go tripConsumer.Listen()
 
 	// Wait for shutdown signal

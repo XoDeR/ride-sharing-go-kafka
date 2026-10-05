@@ -8,26 +8,24 @@ import (
 	"ride-sharing/services/payment-service/internal/domain"
 	"ride-sharing/shared/contracts"
 	"ride-sharing/shared/messaging"
-
-	"github.com/rabbitmq/amqp091-go"
 )
 
 type TripConsumer struct {
-	rabbitmq *messaging.RabbitMQ
-	service  domain.Service
+	kafka   *messaging.Kafka
+	service domain.Service
 }
 
-func NewTripConsumer(rabbitmq *messaging.RabbitMQ, service domain.Service) *TripConsumer {
+func NewTripConsumer(kafka *messaging.Kafka, service domain.Service) *TripConsumer {
 	return &TripConsumer{
-		rabbitmq: rabbitmq,
-		service:  service,
+		kafka:   kafka,
+		service: service,
 	}
 }
 
 func (c *TripConsumer) Listen() error {
-	return c.rabbitmq.ConsumeMessages(messaging.PaymentTripResponseQueue, func(ctx context.Context, msg amqp091.Delivery) error {
+	return c.kafka.Consume(messaging.GroupPaymentCreateSession, []string{contracts.PaymentCmdCreateSession}, func(ctx context.Context, msg messaging.Delivery) error {
 		var message contracts.Message
-		if err := json.Unmarshal(msg.Body, &message); err != nil {
+		if err := json.Unmarshal(msg.Value, &message); err != nil {
 			log.Printf("Failed to unmarshal message: %v", err)
 			return err
 		}
@@ -38,7 +36,7 @@ func (c *TripConsumer) Listen() error {
 			return err
 		}
 
-		switch msg.RoutingKey {
+		switch msg.Topic {
 		case contracts.PaymentCmdCreateSession:
 			if err := c.handleTripAccepted(ctx, payload); err != nil {
 				log.Printf("Failed to handle trip accepted: %v", err)
@@ -82,7 +80,7 @@ func (c *TripConsumer) handleTripAccepted(ctx context.Context, payload messaging
 		return err
 	}
 
-	if err := c.rabbitmq.PublishMessage(ctx, contracts.PaymentEventSessionCreated,
+	if err := c.kafka.PublishMessage(ctx, contracts.PaymentEventSessionCreated,
 		contracts.Message{
 			OwnerID: payload.UserID,
 			Data:    payloadBytes,
