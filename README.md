@@ -87,9 +87,26 @@ Prerequisires: Docker desktop for windows, tilt, minikube.
 
 ## Run
 
+Everything runs in the `ride-sharing-go-kafka` Kubernetes namespace and uses its own
+host ports, so the project can run next to other Tilt projects. Start Tilt with a
+non-default UI port (the default 10350 is probably taken by the other project):
+
 ```bash
-tilt up
+tilt up --port 10351
 ```
+
+| Service | URL on the host |
+|---|---|
+| Web frontend | http://localhost:3100 |
+| API gateway | http://localhost:8181 |
+| Kafka UI (topics, consumer groups, messages) | http://localhost:8180 |
+| Jaeger | http://localhost:16786 |
+| MongoDB | localhost:27117 |
+| OSRM | http://localhost:5100 |
+
+Kafka itself has no host port: all services, including the frontend, run inside the cluster.
+To receive Stripe webhooks locally forward them to the gateway:
+`stripe listen --forward-to localhost:8181/webhook/stripe`.
 
 ## Monitor
 
@@ -175,10 +192,10 @@ kubectl apply -f infra/production/k8s/secrets.yaml
 # Jaeger
 kubectl apply -f infra/production/k8s/jaeger-deployment.yaml
 
-# RabbitMQ
-kubectl apply -f infra/production/k8s/rabbitmq-deployment.yaml
+# Kafka (single broker, no authentication, see the comment in the manifest before using it for real)
+kubectl apply -f infra/production/k8s/kafka-deployment.yaml
 
-# Wait for both Jaeger and RabbitMQ to be running successfully
+# Wait for both Jaeger and Kafka to be running successfully
 
 # Then, apply the services
 kubectl apply -f infra/production/k8s/api-gateway-deployment.yaml

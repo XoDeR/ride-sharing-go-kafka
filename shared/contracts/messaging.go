@@ -1,12 +1,12 @@
 package contracts
 
-// AmqpMessage is the message structure for AMQP.
-type AmqpMessage struct {
+// Message is the envelope of every message sent over the message broker.
+type Message struct {
 	OwnerID string `json:"ownerId"`
 	Data    []byte `json:"data"`
 }
 
-// Routing keys - using consistent event/command patterns
+// Topics (also used as the WebSocket message type) - using consistent event/command patterns
 const (
 	// Trip events (trip.event.*)
 	TripEventCreated             = "trip.event.created"

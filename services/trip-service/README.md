@@ -15,7 +15,7 @@ services/trip-service/
 │   ├── service/          # Business logic implementation
 │   │   └── service.go    # Service implementations
 │   └── infrastructure/   # External dependencies implementations (abstractions)
-│       ├── events/       # Event handling (RabbitMQ)
+│       ├── events/       # Event handling (Kafka)
 │       ├── grpc/         # gRPC server handlers
 │       └── repository/   # Data persistence
 ├── pkg/                  # Public packages

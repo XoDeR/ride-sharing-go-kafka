@@ -9,26 +9,24 @@ import (
 	"ride-sharing/shared/contracts"
 	"ride-sharing/shared/messaging"
 	pbd "ride-sharing/shared/proto/driver"
-
-	"github.com/rabbitmq/amqp091-go"
 )
 
 type driverConsumer struct {
-	rabbitmq *messaging.RabbitMQ
-	service  domain.TripService
+	kafka   *messaging.Kafka
+	service domain.TripService
 }
 
-func NewDriverConsumer(rabbitmq *messaging.RabbitMQ, service domain.TripService) *driverConsumer {
+func NewDriverConsumer(kafka *messaging.Kafka, service domain.TripService) *driverConsumer {
 	return &driverConsumer{
-		rabbitmq: rabbitmq,
-		service:  service,
+		kafka:   kafka,
+		service: service,
 	}
 }
 
 func (c *driverConsumer) Listen() error {
-	return c.rabbitmq.ConsumeMessages(messaging.DriverTripResponseQueue, func(ctx context.Context, msg amqp091.Delivery) error {
-		var message contracts.AmqpMessage
-		if err := json.Unmarshal(msg.Body, &message); err != nil {
+	return c.kafka.Consume(messaging.GroupTripDriverResponse, []string{contracts.DriverCmdTripAccept, contracts.DriverCmdTripDecline}, func(ctx context.Context, msg messaging.Delivery) error {
+		var message contracts.Message
+		if err := json.Unmarshal(msg.Value, &message); err != nil {
 			log.Printf("Failed to unmarshal message: %v", err)
 			return err
 		}
@@ -41,7 +39,7 @@ func (c *driverConsumer) Listen() error {
 
 		log.Printf("driver response received message: %+v", payload)
 
-		switch msg.RoutingKey {
+		switch msg.Topic {
 		case contracts.DriverCmdTripAccept:
 			if err := c.handleTripAccepted(ctx, payload.TripID, payload.Driver); err != nil {
 				log.Printf("Failed to handle the trip accept: %v", err)
@@ -77,8 +75,8 @@ func (c *driverConsumer) handleTripDeclined(ctx context.Context, tripID, riderID
 		return err
 	}
 
-	if err := c.rabbitmq.PublishMessage(ctx, contracts.TripEventDriverNotInterested,
-		contracts.AmqpMessage{
+	if err := c.kafka.PublishMessage(ctx, contracts.TripEventDriverNotInterested,
+		contracts.Message{
 			OwnerID: riderID,
 			Data:    marshalledPayload,
 		},
@@ -118,7 +116,7 @@ func (c *driverConsumer) handleTripAccepted(ctx context.Context, tripID string, 
 	}
 
 	// Notify the rider that a driver has been assigned
-	if err := c.rabbitmq.PublishMessage(ctx, contracts.TripEventDriverAssigned, contracts.AmqpMessage{
+	if err := c.kafka.PublishMessage(ctx, contracts.TripEventDriverAssigned, contracts.Message{
 		OwnerID: trip.UserID,
 		Data:    marshalledTrip,
 	}); err != nil {
@@ -133,8 +131,8 @@ func (c *driverConsumer) handleTripAccepted(ctx context.Context, tripID string, 
 		Currency: "USD",
 	})
 
-	if err := c.rabbitmq.PublishMessage(ctx, contracts.PaymentCmdCreateSession,
-		contracts.AmqpMessage{
+	if err := c.kafka.PublishMessage(ctx, contracts.PaymentCmdCreateSession,
+		contracts.Message{
 			OwnerID: trip.UserID,
 			Data:    marshalledPayload,
 		},

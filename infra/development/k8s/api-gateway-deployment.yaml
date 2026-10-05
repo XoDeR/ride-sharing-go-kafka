@@ -36,11 +36,11 @@ spec:
                 configMapKeyRef:
                   key: JAEGER_ENDPOINT
                   name: app-config
-            - name: RABBITMQ_URI
+            - name: KAFKA_BROKERS
               valueFrom:
-                secretKeyRef:
-                  name: rabbitmq-credentials
-                  key: uri
+                configMapKeyRef:
+                  name: app-config
+                  key: KAFKA_BROKERS
             - name: STRIPE_WEBHOOK_KEY
               valueFrom:
                 secretKeyRef:
