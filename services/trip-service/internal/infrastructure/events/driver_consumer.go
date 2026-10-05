@@ -27,7 +27,7 @@ func NewDriverConsumer(rabbitmq *messaging.RabbitMQ, service domain.TripService)
 
 func (c *driverConsumer) Listen() error {
 	return c.rabbitmq.ConsumeMessages(messaging.DriverTripResponseQueue, func(ctx context.Context, msg amqp091.Delivery) error {
-		var message contracts.AmqpMessage
+		var message contracts.Message
 		if err := json.Unmarshal(msg.Body, &message); err != nil {
 			log.Printf("Failed to unmarshal message: %v", err)
 			return err
@@ -78,7 +78,7 @@ func (c *driverConsumer) handleTripDeclined(ctx context.Context, tripID, riderID
 	}
 
 	if err := c.rabbitmq.PublishMessage(ctx, contracts.TripEventDriverNotInterested,
-		contracts.AmqpMessage{
+		contracts.Message{
 			OwnerID: riderID,
 			Data:    marshalledPayload,
 		},
@@ -118,7 +118,7 @@ func (c *driverConsumer) handleTripAccepted(ctx context.Context, tripID string, 
 	}
 
 	// Notify the rider that a driver has been assigned
-	if err := c.rabbitmq.PublishMessage(ctx, contracts.TripEventDriverAssigned, contracts.AmqpMessage{
+	if err := c.rabbitmq.PublishMessage(ctx, contracts.TripEventDriverAssigned, contracts.Message{
 		OwnerID: trip.UserID,
 		Data:    marshalledTrip,
 	}); err != nil {
@@ -134,7 +134,7 @@ func (c *driverConsumer) handleTripAccepted(ctx context.Context, tripID string, 
 	})
 
 	if err := c.rabbitmq.PublishMessage(ctx, contracts.PaymentCmdCreateSession,
-		contracts.AmqpMessage{
+		contracts.Message{
 			OwnerID: trip.UserID,
 			Data:    marshalledPayload,
 		},

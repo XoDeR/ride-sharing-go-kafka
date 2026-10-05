@@ -159,7 +159,7 @@ func handleDriversWebSocket(w http.ResponseWriter, r *http.Request, rb *messagin
 			continue
 		case contracts.DriverCmdTripAccept, contracts.DriverCmdTripDecline:
 			// Forward the message to RabbitMQ
-			if err := rb.PublishMessage(ctx, driverMsg.Type, contracts.AmqpMessage{
+			if err := rb.PublishMessage(ctx, driverMsg.Type, contracts.Message{
 				OwnerID: userID,
 				Data:    driverMsg.Data,
 			}); err != nil {

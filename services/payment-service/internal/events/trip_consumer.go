@@ -26,7 +26,7 @@ func NewTripConsumer(rabbitmq *messaging.RabbitMQ, service domain.Service) *Trip
 
 func (c *TripConsumer) Listen() error {
 	return c.rabbitmq.ConsumeMessages(messaging.PaymentTripResponseQueue, func(ctx context.Context, msg amqp091.Delivery) error {
-		var message contracts.AmqpMessage
+		var message contracts.Message
 		if err := json.Unmarshal(msg.Body, &message); err != nil {
 			log.Printf("Failed to unmarshal message: %v", err)
 			return err
@@ -83,7 +83,7 @@ func (c *TripConsumer) handleTripAccepted(ctx context.Context, payload messaging
 	}
 
 	if err := c.rabbitmq.PublishMessage(ctx, contracts.PaymentEventSessionCreated,
-		contracts.AmqpMessage{
+		contracts.Message{
 			OwnerID: payload.UserID,
 			Data:    payloadBytes,
 		},

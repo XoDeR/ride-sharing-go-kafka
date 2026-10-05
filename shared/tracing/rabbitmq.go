@@ -50,7 +50,7 @@ func TracedPublisher(ctx context.Context, exchange, routingKey string, msg amqp.
 	defer span.End()
 
 	// Try to extract and add message details to span (map[string]any if you don't know the type)
-	var msgBody contracts.AmqpMessage
+	var msgBody contracts.Message
 	if err := json.Unmarshal(msg.Body, &msgBody); err == nil {
 		if msgBody.OwnerID != "" {
 			span.SetAttributes(attribute.String("messaging.owner_id", msgBody.OwnerID))
@@ -90,7 +90,7 @@ func TracedConsumer(delivery amqp.Delivery, handler func(context.Context, amqp.D
 	defer span.End()
 
 	// Try to extract and add message details to span (map[string]any if you don't know the type)
-	var msgBody contracts.AmqpMessage
+	var msgBody contracts.Message
 	if err := json.Unmarshal(delivery.Body, &msgBody); err == nil {
 		if msgBody.OwnerID != "" {
 			span.SetAttributes(attribute.String("messaging.owner_id", msgBody.OwnerID))

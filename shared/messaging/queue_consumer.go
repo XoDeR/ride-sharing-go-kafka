@@ -36,7 +36,7 @@ func (qc *QueueConsumer) Start() error {
 
 	go func() {
 		for msg := range msgs {
-			var msgBody contracts.AmqpMessage
+			var msgBody contracts.Message
 			if err := json.Unmarshal(msg.Body, &msgBody); err != nil {
 				log.Println("Failed to unmarshal message:", err)
 				continue

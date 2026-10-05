@@ -151,7 +151,7 @@ func handleStripeWebhook(w http.ResponseWriter, r *http.Request, rb *messaging.R
 			return
 		}
 
-		message := contracts.AmqpMessage{
+		message := contracts.Message{
 			OwnerID: session.Metadata["user_id"],
 			Data:    payloadBytes,
 		}

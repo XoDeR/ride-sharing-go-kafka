@@ -26,7 +26,7 @@ func NewPaymentConsumer(rabbitmq *messaging.RabbitMQ, service domain.TripService
 
 func (c *paymentConsumer) Listen() error {
 	return c.rabbitmq.ConsumeMessages(messaging.NotifyPaymentSuccessQueue, func(ctx context.Context, msg amqp091.Delivery) error {
-		var message contracts.AmqpMessage
+		var message contracts.Message
 		if err := json.Unmarshal(msg.Body, &message); err != nil {
 			log.Printf("Failed to unmarshal message: %v", err)
 			return err
